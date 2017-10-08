@@ -9,8 +9,8 @@
 
 		const DB_SERVER = "localhost";
 		const DB_USER = "root";
-		const DB_PASSWORD = "";
-		const DB = "db_api";
+		const DB_PASSWORD = "root";
+		const DB = "doctor";
 
 		private $db = NULL;
 
@@ -20,9 +20,7 @@
 		}
 
 	function createDateRangeArray($start, $end) {
-		// Modified by JJ Geewax
 		$range = array();
-
 		if (is_string($start) === true) $start = strtotime($start);
 		if (is_string($end) === true ) $end = strtotime($end);
 
@@ -78,7 +76,7 @@
 		 *  email : <USER EMAIL>
 		 *  pwd : <USER PASSWORD>
 		 */
-		public function getToken($length){
+		public function getToken($length) {
 		    $token = "";
 		    $codeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 		    $codeAlphabet.= "abcdefghijklmnopqrstuvwxyz";
@@ -90,85 +88,6 @@
 		   }
 		   return $token;
 		}
-//Doctor Set Availability
-		private function my_availability(){
-			if($this->get_request_method() != "POST"){
-				$this->response('',406);
-			}
-			if(isset($_GET['doc_id'])) {
-					if(!isset($_POST['start_date'])) {
-						$error = array('status' => "Failed", "msg" => "Parameter start_Date is required");
-						$this->response($this->json($error), 200);
-					}
-					if(!isset($_POST['end_date'])) {
-						$error = array('status' => "Failed", "msg" => "Parameter To end_date is required");
-						$this->response($this->json($error), 200);
-					}
-					if(!isset($_POST['from_time'])) {
-						$error = array('status' => "Failed", "msg" => "Parameter from_time is required");
-						$this->response($this->json($error), 200);
-					}
-					if(!isset($_POST['to_time'])) {
-						$error = array('status' => "Failed", "msg" => "Parameter to_time is required");
-						$this->response($this->json($error), 200);
-					}
-
-					$doc_id = $_GET['doc_id'];
-					$start_date = isset($this->_request['start_date']) ? $this->_request['start_date'] : '';
-					$end_date = isset($this->_request['end_date']) ? $this->_request['end_date'] : '';
-					$from_time = isset($this->_request['from_time']) ? $this->_request['from_time'] : '';
-					$to_time = isset($this->_request['to_time']) ? $this->_request['to_time'] : '';
-					$created_at = date('Y-m-d H:i:s');
-					$updated_at = date('Y-m-d H:i:s');
-
-					$dateRange = $this->createDateRangeArray($start_date, $end_date);
-		//Count date in difference
-			/*$diff = abs(strtotime($end_date) - strtotime($start_date));
-
-			$years = floor($diff / (365*60*60*24));
-			$months = floor(($diff - $years * 365*60*60*24) / (30*60*60*24));
-			$days = floor(($diff - $years * 365*60*60*24 - $months*30*60*60*24)/ (60*60*24));*/
-
-					if(!empty($start_date) && !empty($end_date) && !empty($from_time) && !empty($to_time) ) {
-
-						$sql = "SELECT doc_id,start_date,end_date,from_time,to_time FROM doc_availability WHERE doc_id = ".$doc_id." and start_date='".$start_date."' LIMIT 1";
-echo $sql;
-//tomorrow work to be done
-						$stmt = $this->db->prepare($sql);
-						$stmt->execute();
-					  $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-//print_r($results); exit();
-						if(empty($results)) {
-
-							if(count($this->createDateRangeArray($start_date, $end_date))=='1') {
-								$sql = "INSERT INTO doc_availability (`doc_id`, `start_date`, `end_date`, `from_time`, `to_time`, `created_at`, `updated_at`) VALUES (".$doc_id.",'".$start_date."','".$end_date."', '".$from_time."', '".$to_time."', '".$created_at."', '".$updated_at."' )";
-								$execute = $this->db->query($sql);
-
-								$error = array('status' => "Failed", "msg" => "Data inserted successfully");
-								$this->response($this->json($error), 200);
-							} else{
-								foreach($dateRange as $dr) {
-										$sql = "INSERT INTO doc_availability (`doc_id`, `start_date`, `end_date`, `from_time`, `to_time`, `created_at`, `updated_at`) VALUES (".$doc_id.",'".$dr."','".$dr."', '".$from_time."', '".$to_time."', '".$created_at."', '".$updated_at."' )";
-										$execute = $this->db->query($sql);
-								}
-								$error = array('status' => "Failed", "msg" => "Data inserted successfully");
-								$this->response($this->json($error), 200);
-							}
-						} else{
-							$error = array('status' => "Failed", "msg" => "Data of this Date already inserted");
-							$this->response($this->json($error), 200);
-						}
-
-					} else{
-						$error = array('status' => "Failed", "msg" => "Please input all the fields");
-						$this->response($this->json($error), 200);
-					}
-			}else{
-				$error = array('status' => "Failed", "msg" => "No Doctor found");
-				$this->response($this->json($error), 200);
-			}
-		}
-// End Doctor Availability
 
 // Login of Doctor and User
 		private function login() {
@@ -221,9 +140,6 @@ echo $sql;
 //http://localhost/myapi/api.php?value=registeration&user_id=0
 // Registeration
 		public function registeration() {
-			/*$c = "Hello World";
-			$this->uploadImage($c);
-			exit();*/
 			// Cross validation if the request method is POST else it will return "Not Acceptable" status
 			if($this->get_request_method() != "POST"){
 				$this->response('',406);
@@ -233,7 +149,10 @@ echo $sql;
 				$error = array('status' => "Failed", "msg" => "Parameter name, email, mobile no,password and confirm_password are require");
 				$this->response($this->json($error), 200);
 			}
-			
+			if(!isset($_POST['name'])) {
+				$error = array('status' => "Failed", "msg" => "Parameter name is required");
+				$this->response($this->json($error), 200);
+			}
 			if(!isset($_POST['email'])) {
 				$error = array('status' => "Failed", "msg" => "Parameter email is required");
 				$this->response($this->json($error), 200);
@@ -254,6 +173,14 @@ echo $sql;
 				$error = array('status' => "Failed", "msg" => "Parameter specializaton is required");
 				$this->response($this->json($error), 200);
 			}
+			if(!isset($_POST['mobile_number'])) {
+				$error = array('status' => "Failed", "msg" => "Parameter mobile_number is required");
+				$this->response($this->json($error), 200);
+			}
+			if(!isset($_POST['doctor_user_id'])) {
+				$error = array('status' => "Failed", "msg" => "Parameter doctor_user_id is required");
+				$this->response($this->json($error), 200);
+			}
 
 			$name = $this->_request['name'];
 			$email = $this->_request['email'];
@@ -261,13 +188,14 @@ echo $sql;
 			$cpassword = $this->_request['confirm_password'];
 			$phone_no = $this->_request['mobile_number'];
 			$user_image = isset($_FILES["fileUpload"]["name"]) ? $_FILES["fileUpload"]["name"] : '';
-			$address = $this->_request['address'];
+			$address = isset($this->_request['address']) ? $this->_request['address'] : '' ;
 			$city = isset($this->_request['city']) ? $this->_request['city'] : '';
 			$district = isset($this->_request['district']) ? $this->_request['district'] : '';
 			$state = isset($this->_request['state']) ? $this->_request['state'] : '';
 			$pincode = isset($this->_request['pincode']) ? $this->_request['pincode'] : '';
 			$qualification = isset($this->_request['qualification']) ? $this->_request['qualification'] : '';
 			$specializaton = isset($this->_request['specializaton']) ? $this->_request['specializaton'] : '';
+			$doctor_user_id = $this->_request['doctor_user_id'];
 			$created_at = date('Y-m-d H:i:s');
 			$updated_at = date('Y-m-d H:i:s');
 
@@ -284,7 +212,6 @@ echo $sql;
 			$fetchData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 			if(count($fetchData)==0) {
-
 					if(!isset($phone_no)) {
 						$error = array('status' => "Failed", "msg" => "Mobile number is required");
 						$this->response($this->json($error), 200);
@@ -306,23 +233,25 @@ echo $sql;
 							$hashed_password = sha1($password);
 							$token_value = 'Api'.$this->getToken(50);
 
-							if($_GET['user_id']=='1') {  // Client Data Store
-									$sql = "INSERT INTO doctor_user (`du_name`, `du_email`, `du_phone_no`, `du_pic`, `user_type`, `du_password`, `du_address`, `du_city`, `du_district`, `du_state`, `du_pincode` ,`remember_token`, `specializaton`, `qualification`,`created_at`, `updated_at`) VALUES ('".$name."','".$email."',".$phone_no.", '".$user_image."' , '1','".$hashed_password."', '".$address."', '".$city."', '".$district."', '".$state."', ".$pincode.",'".$token_value."', '', '', '".$created_at."', '".$updated_at."' )";
+							if($doctor_user_id=='1') {  // Client Data Store
+									$sql = "INSERT INTO doctor_user (`du_name`, `du_email`, `du_phone_no`, `du_pic`, `user_type`, `du_password`, `du_address`, `du_city`, `du_district`, `du_state`, `du_pincode` ,`remember_token`, `specializaton`, `qualification`,`created_at`, `updated_at`) VALUES ('".$name."','".$email."',".$phone_no.", '".$user_image."' , '1','".$hashed_password."', '".$address."', '".$city."', '".$district."', '".$state."', '".$pincode."','".$token_value."', '', '', '".$created_at."','".$updated_at."' )";
 									$execute = $this->db->query($sql);
 
 									$error = array('status' => "Sucess", "msg" => "User Successfully created!");
 									$this->response($this->json($error), 200);
 							  }
-								if($_GET['user_id']=='0') { // Doctor Data Store
 
+								if($doctor_user_id == '0') { // Doctor Data Store
 							    $sql = "INSERT INTO doctor_user (`du_name`, `du_email`, `du_phone_no`, `du_pic`, `user_type`, `du_password`, `du_address`, `du_city`, `du_district`, `du_state`, `du_pincode` ,`remember_token`, `specializaton`, `qualification`, `created_at`, `updated_at`) VALUES ('".$name."', '".$email."', ".$phone_no.", '".$user_image."', '0','".$hashed_password."', '".$address."', '".$city."', '".$district."', '".$state."', '".$pincode."', '".$token_value."', '".$specializaton."', '".$qualification."', '".$created_at."', '".$updated_at."')";
 									$execute = $this->db->query($sql);
 
 									$error = array('status' => "Sucess", "msg" => "Doctor Successfully created!");
 									$this->response($this->json($error), 200);
 							  }
-
-					}
+					} else{
+					$error = array('status' => "Failed", "msg" => "Name, Email password and confirm_password required");
+					$this->response($this->json($error), 200);
+				}
 			} else{
 			$error = array('status' => "Failed", "msg" => "Email ID or Phone number already exists");
 			$this->response($this->json($error), 200);
@@ -334,9 +263,11 @@ echo $sql;
 	}
 // End Registeration
 
+
 // Profile Updation
 		private function profile_updation() {
-			$user_id = $_GET['user_id'];
+
+			$user_id = $this->_request['doctor_user_id'];
 
 			$sql = "SELECT * FROM doctor_user WHERE du_id=$user_id LIMIT 1";
 			$stmt = $this->db->prepare($sql);
@@ -376,10 +307,10 @@ echo $sql;
 						//$cpassword = $this->_request['confirm_password'];
 						$phone_no = $this->_request['mobile_number'];
 						$address = $this->_request['address'];
-						$city = $this->_request['city'];
-						$district = $this->_request['district'];
-						$state = $this->_request['state'];
-						$pin_code = $this->_request['pin_code'];
+						$city = isset($this->_request['city']) ? $this->_request['city'] : '';
+						$district = isset($this->_request['district']) ? $this->_request['district'] : '';
+						$state = isset($this->_request['state']) ? $this->_request['state'] : '';
+						$pin_code = isset($this->_request['pin_code']) ? $this->_request['pin_code'] : '';
 						$qualification = $this->_request['qualification'];
 						$user_image = isset($_FILES["fileUpload"]["name"]) ? $_FILES["fileUpload"]["name"] : '';
 						$updated_at = date('Y-m-d H:i:s');
@@ -393,20 +324,15 @@ echo $sql;
 						}
 
 						if(!empty($name) && !empty($phone_no)) {
-// Generate Hashed Password
-						$hashed_password = sha1($_POST['password']);
+								// Generate Hashed Password
+						//$hashed_password = sha1($_POST['password']);
 							/*$sql = "UPDATE doctor_user SET `du_name`='".$name."', `du_phone_no`=".$phone_no.",
 											du_pic='".$user_image."' , `du_password`='".$hashed_password."',
 											`du_address`='".$address."', `qualification`='".$qualification."',
 											`du_city`='".$city."', `du_district`='".$district."', `du_state`='".$state."',
 											'".$pincode."', `updated_at`='".$updated_at."', `du_pic`=''
 											WHERE du_id='".$user_id."' ";*/
-							$sql = "UPDATE doctor_user SET `du_name`='".$name."', `du_phone_no`=".$phone_no.",
-											du_pic='".$user_image."' , `du_address`='".$address."', `qualification`='".$qualification."',
-											`du_city`='".$city."', `du_district`='".$district."', `du_state`='".$state."',
-											'".$pincode."', `updated_at`='".$updated_at."', `du_pic`=''
-											WHERE du_id='".$user_id."' ";
-
+							$sql = "UPDATE doctor_user SET `du_name`='".$name."', du_pic='".$user_image."' , `du_address`='".$address."', `qualification`='".$qualification."', `du_city`='".$city."', `du_district`='".$district."', `du_state`='".$state."', `du_pincode`='".$pin_code."', `updated_at`='".$updated_at."', `du_pic`='' WHERE du_id='".$user_id."' ";
 							$stmt = $this->db->prepare($sql);
 							$update = $stmt->execute();
 							$fetchData = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -424,12 +350,11 @@ echo $sql;
 								$this->response($this->json($error), 200);
 							}
 					}
-// When record not found using the given userID
+					// When record not found using the given userID
 				} else {
 					$error = array('status' => "Failed", "msg" => "Invalid User ID");
 					$this->response($this->json($error), 200);
 				}
-
 		}
 //End Profile Updation
 
@@ -439,63 +364,418 @@ echo $sql;
 			if($this->get_request_method() != "POST"){
 				$this->response('',406);
 			}
-		//Declare POST variable
+			/*if(!isset($_POST['doctor_name'])) {
+				$error = array('status' => "Failed", "msg" => "Parameter doctor_name is required");
+				$this->response($this->json($error), 200);
+			}*/
+//Declare POST variable
 			$name = isset($this->_request['name'])? '%'.$this->_request['name'].'%':'';
 			$phone_no = isset($this->_request['mobile_number']) ? '%'.$this->_request['mobile_number'].'%':'';
 			$speacializaton = isset($this->_request['specializaton'])? '%'.$this->_request['specializaton'].'%':'';
 			$pincode = isset($this->_request['pincode']) ? '%'.$this->_request['pincode'].'%' :'';
 
-			// Execute Query
-		if(isset($this->_request['name'])) {
-			$sql = "SELECT `du_name`,`du_email`,`du_phone_no`,`du_pic`,`du_address`,`du_city`,`du_district`,`du_state`,`du_pincode`,`specializaton`,`qualification` FROM doctor_user WHERE `user_type` = 0 AND `du_name` LIKE '$name' LIMIT 5 ";
-		} else if(isset($this->_request['mobile_number'])) {
-			$sql = "SELECT `du_name`,`du_email`,`du_phone_no`,`du_pic`,`du_address`,`du_city`,`du_district`,`du_state`,`du_pincode`,`specializaton`,`qualification` FROM doctor_user WHERE `user_type` = 0 AND `du_phone_no` LIKE '$phone_no' LIMIT 5";
-		} else if(isset($this->_request['specializaton'])) {
-			$sql = "SELECT `du_name`,`du_email`,`du_phone_no`,`du_pic`,`du_address`,`du_city`,`du_district`,`du_state`,`du_pincode`,`specializaton`,`qualification` FROM doctor_user WHERE `user_type` = 0 AND `specializaton` LIKE '$speacializaton' LIMIT 5";
-		} else{
-			$sql = "SELECT `du_name`,`du_email`,`du_phone_no`,`du_pic`,`du_address`,`du_city`,`du_district`,`du_state`,`du_pincode`,`specializaton`,`qualification` FROM doctor_user WHERE `user_type` = 0 AND `du_pincode` LIKE '".$pincode."' LIMIT 5";
-		}
+// Fetch Doctor records who have add their availability
+			$ava_sql = "SELECT `doc_availability`.`start_date`, `doc_availability`.`end_date`,`doc_availability_place`.`doc_id` FROM doc_availability
+									JOIN `doc_availability_place` ON `doc_availability_place`.`id` = `doc_availability`.`doc_ava_pla_id`
+									JOIN `doctor_user` ON `doctor_user`.`du_id`= `doc_availability_place`.`doc_id`
+									WHERE `doc_availability`.`start_date`= CURRENT_DATE()
+									OR `doc_availability`.`end_date`=CURRENT_DATE()
+									AND `doc_availability`.`is_delete`='0'
+									AND `doctor_user`.`user_type`='0' ";
 
-			$stmt = $this->db->prepare($sql);
+			$stmt = $this->db->prepare($ava_sql);
 			$searchResult = $stmt->execute();
 			$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-			if(count($results)>0) {
-				$error = array('status' => "Sucess", "msg" => count($results)." Result found", "Data" => json_encode($results) );
-				$this->response($this->json($error), 200);
-			} else{
-				$error = array('status' => "Failed", "msg" => "No Result Found");
-				$this->response($this->json($error), 200);
+			//If Not Empty then fetch doc id
+			if(!empty($results)) {
+				foreach($results as $ress) {
+					$check_doc_ava[] = $ress['doc_id'];
+			}
+			$check_doc_val = isset($check_doc_ava) ? implode(',',$check_doc_ava) : '' ;
+				if(!empty($_POST['doctor_name'])) {
+
+					$name = $_POST['doctor_name'];
+					//fetch data who's not put their availability
+					$ava_not_sql = "SELECT `doctor_user`.`du_name`,`doctor_user`.`du_email`,`doctor_user`.`du_phone_no`,`doctor_user`.`du_pic`,`doctor_user`.`du_address`,`doctor_user`.`du_city`,`doctor_user`.`du_district`,`doctor_user`.`du_state`,`doctor_user`.`du_pincode` FROM doctor_user
+								WHERE `doctor_user`.`du_id`
+								NOT IN ($check_doc_val)
+								AND `doctor_user`.`user_type`='0'
+								AND `doctor_user`.`du_name`
+								LIKE '$name' LIMIT 5 ";
+
+					$stmt = $this->db->prepare($ava_not_sql);
+					$searchResult = $stmt->execute();
+					$results_not_ava = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+					$ava_sql1 = "SELECT DISTINCT(`doctor_user`.`du_name`),`doctor_user`.`du_email`,`doctor_user`.`du_phone_no`,`doctor_user`.`du_pic`,`doc_availability_place`.`doct_visit_address`,`doc_availability_place`.`doct_visit_state`,`doc_availability_place`.`doct_visit_city`,`doc_availability_place`.`doct_visit_district`,`doc_availability_place`.`doct_visit_pincode` FROM `doctor_user`
+							JOIN `doc_availability_place` ON `doc_availability_place`.`doc_id` = `doctor_user`.`du_id`
+								WHERE `doctor_user`.`du_id` IN ($check_doc_val)
+								AND `doctor_user`.`user_type`='0'
+								AND `doctor_user`.`du_name`
+								LIKE '%".$name."%' LIMIT 5 ";
+
+					$stmnt = $this->db->prepare($ava_sql1);
+					$searchResults = $stmnt->execute();
+					$results_avalable = $stmnt->fetchAll(PDO::FETCH_ASSOC);
+
+					//if( !empty($results_not_ava) && !empty($results_avalable) ){
+						$error = array('status' => "Success", 'msg' => "Doctor Result Found", 'data' => array_merge($results_not_ava,$results_avalable));
+						$this->response($this->json($error), 200);
+					/*} else{
+						$error = array('status' => "Success", 'msg' => "0 Result Found" );
+						$this->response($this->json($error), 200);
+					}*/
+
+				} else if(!empty($_POST['mobile_number'])) {
+
+					$mobile_name = $_POST['mobile_number'];
+					$ava_not_sql = "SELECT `doctor_user`.`du_name`,`doctor_user`.`du_email`,`doctor_user`.`du_phone_no`,`doctor_user`.`du_pic`,`doctor_user`.`du_address`,`doctor_user`.`du_city`,`doctor_user`.`du_district`,`doctor_user`.`du_state`,`doctor_user`.`du_pincode` FROM doctor_user
+								WHERE `doctor_user`.`du_id`
+								NOT IN ($check_doc_val)
+								AND `doctor_user`.`user_type`='0'
+								AND `doctor_user`.`du_phone_no`
+								LIKE ".$mobile_name." LIMIT 5 ";
+
+					$stmt = $this->db->prepare($ava_not_sql);
+					$searchResult = $stmt->execute();
+					$results_not_ava = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+					$ava_sql1 = "SELECT DISTINCT(`doctor_user`.`du_name`),`doctor_user`.`du_email`,`doctor_user`.`du_phone_no`,`doctor_user`.`du_pic`,`doc_availability_place`.`doct_visit_address`,`doc_availability_place`.`doct_visit_state`,`doc_availability_place`.`doct_visit_city`,`doc_availability_place`.`doct_visit_district`,`doc_availability_place`.`doct_visit_pincode` FROM `doctor_user`
+							JOIN `doc_availability_place` ON `doc_availability_place`.`doc_id` = `doctor_user`.`du_id`
+								WHERE `doctor_user`.`du_id` IN ($check_doc_val)
+								AND `doctor_user`.`user_type`='0'
+								AND `doctor_user`.`du_name`
+								LIKE ".$mobile_name." LIMIT 5 ";
+
+					$stmnt = $this->db->prepare($ava_sql1);
+					$searchResults = $stmnt->execute();
+					$results_avalable = $stmnt->fetchAll(PDO::FETCH_ASSOC);
+
+					//if( !empty($results_not_ava) && !empty($results_avalable) ){
+						$error = array('status' => "Success", 'msg' => "Mobile Result Found", 'data' => json_encode(array_merge($results_not_ava,$results_avalable)) );
+						$this->response($this->json($error), 200);
+					/*} else{
+						$error = array('status' => "Success", 'msg' => "0 Result Found" );
+						$this->response($this->json($error), 200);
+					}*/
+
+				} else if(!empty($_POST['specializaton'])) {
+
+					$specializaton = $_POST['specializaton'];
+					$ava_not_sql = "SELECT `doctor_user`.`du_name`,`doctor_user`.`du_email`,`doctor_user`.`du_phone_no`,`doctor_user`.`du_pic`,`doctor_user`.`du_address`,`doctor_user`.`du_city`,`doctor_user`.`du_district`,`doctor_user`.`du_state`,`doctor_user`.`du_pincode` FROM doctor_user
+								WHERE `doctor_user`.`du_id`
+								NOT IN ($check_doc_val)
+								AND `doctor_user`.`user_type`='0'
+								AND `doctor_user`.`specializaton`
+								LIKE '".$specializaton."' LIMIT 5 ";
+
+					$stmt = $this->db->prepare($ava_not_sql);
+					$searchResult = $stmt->execute();
+					$results_not_ava = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+					$ava_sql1 = "SELECT DISTINCT(`doctor_user`.`du_name`),`doctor_user`.`du_email`,`doctor_user`.`du_phone_no`,`doctor_user`.`du_pic`,`doc_availability_place`.`doct_visit_address`,`doc_availability_place`.`doct_visit_state`,`doc_availability_place`.`doct_visit_city`,`doc_availability_place`.`doct_visit_district`,`doc_availability_place`.`doct_visit_pincode` FROM `doctor_user`
+							JOIN `doc_availability_place` ON `doc_availability_place`.`doc_id` = `doctor_user`.`du_id`
+								WHERE `doctor_user`.`du_id` IN ($check_doc_val)
+								AND `doctor_user`.`user_type`='0'
+								AND `doctor_user`.`specializaton`
+								LIKE '".$specializaton."' LIMIT 5 ";
+
+					$stmnt = $this->db->prepare($ava_sql1);
+					$searchResults = $stmnt->execute();
+					$results_avalable = $stmnt->fetchAll(PDO::FETCH_ASSOC);
+
+					//if( !empty($results_not_ava) && !empty($results_avalable) ){
+						$error = array('status' => "Success", 'msg' => "Specializaton Result Found", 'data' => json_encode(array_merge($results_not_ava,$results_avalable)) );
+						$this->response($this->json($error), 200);
+					/*} else{
+						$error = array('status' => "Success", 'msg' => "0 Result Found" );
+						$this->response($this->json($error), 200);
+					}*/
+
+				} else if(!empty($_POST['qualification'])) {
+
+					$qualification = $_POST['qualification'];
+					$ava_not_sql = "SELECT `doctor_user`.`du_name`,`doctor_user`.`du_email`,`doctor_user`.`du_phone_no`,`doctor_user`.`du_pic`,`doctor_user`.`du_address`,`doctor_user`.`du_city`,`doctor_user`.`du_district`,`doctor_user`.`du_state`,`doctor_user`.`du_pincode` FROM doctor_user
+								WHERE `doctor_user`.`du_id`
+								NOT IN ($check_doc_val)
+								AND `doctor_user`.`user_type`='0'
+								AND `doctor_user`.`qualification`
+								LIKE '".$qualification."' LIMIT 5 ";
+
+					$stmt = $this->db->prepare($ava_not_sql);
+					$searchResult = $stmt->execute();
+					$results_not_ava = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+					$ava_sql1 = "SELECT DISTINCT(`doctor_user`.`du_name`),`doctor_user`.`du_email`,`doctor_user`.`du_phone_no`,`doctor_user`.`du_pic`,`doc_availability_place`.`doct_visit_address`,`doc_availability_place`.`doct_visit_state`,`doc_availability_place`.`doct_visit_city`,`doc_availability_place`.`doct_visit_district`,`doc_availability_place`.`doct_visit_pincode` FROM `doctor_user`
+							JOIN `doc_availability_place` ON `doc_availability_place`.`doc_id` = `doctor_user`.`du_id`
+								WHERE `doctor_user`.`du_id` IN ($check_doc_val)
+								AND `doctor_user`.`user_type`='0'
+								AND `doctor_user`.`qualification`
+								LIKE '".$qualification."' LIMIT 5 ";
+
+					$stmnt = $this->db->prepare($ava_sql1);
+					$searchResults = $stmnt->execute();
+					$results_avalable = $stmnt->fetchAll(PDO::FETCH_ASSOC);
+
+					//if( !empty($results_not_ava) && !empty($results_avalable) ){
+						$error = array('status' => "Success", 'msg' => "Qualification Result Found", 'data' => json_encode(array_merge($results_not_ava,$results_avalable)) );
+						$this->response($this->json($error), 200);
+					/*} else{
+						$error = array('status' => "Success", 'msg' => "0 Result Found" );
+						$this->response($this->json($error), 200);
+					}*/
+
+				} else if(!empty($_POST['pincode'])) {
+
+					$pincode = $_POST['pincode'];
+					$ava_not_sql = "SELECT `doctor_user`.`du_name`,`doctor_user`.`du_email`,`doctor_user`.`du_phone_no`,`doctor_user`.`du_pic`,`doctor_user`.`du_address`,`doctor_user`.`du_city`,`doctor_user`.`du_district`,`doctor_user`.`du_state`,`doctor_user`.`du_pincode` FROM doctor_user
+								WHERE `doctor_user`.`du_id`
+								NOT IN ($check_doc_val)
+								AND `doctor_user`.`user_type`='0'
+								AND `doctor_user`.`du_pincode`
+								LIKE ".$pincode." LIMIT 5 ";
+
+					$stmt = $this->db->prepare($ava_not_sql);
+					$searchResult = $stmt->execute();
+					$results_not_ava = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+					$ava_sql1 = "SELECT DISTINCT(`doctor_user`.`du_name`),`doctor_user`.`du_email`,`doctor_user`.`du_phone_no`,`doctor_user`.`du_pic`,`doc_availability_place`.`doct_visit_address`,`doc_availability_place`.`doct_visit_state`,`doc_availability_place`.`doct_visit_city`,`doc_availability_place`.`doct_visit_district`,`doc_availability_place`.`doct_visit_pincode` FROM `doctor_user`
+							JOIN `doc_availability_place` ON `doc_availability_place`.`doc_id` = `doctor_user`.`du_id`
+								WHERE `doctor_user`.`du_id` IN ($check_doc_val)
+								AND `doctor_user`.`user_type`='0'
+								AND `doctor_user`.`du_pincode`
+								LIKE ".$pincode." LIMIT 5 ";
+
+					$stmnt = $this->db->prepare($ava_sql1);
+					$searchResults = $stmnt->execute();
+					$results_avalable = $stmnt->fetchAll(PDO::FETCH_ASSOC);
+
+					//if( !empty($results_not_ava) && !empty($results_avalable) ){
+						$error = array('status' => "Success", 'msg' => "Pin Code Result Found", 'data' => json_encode(array_merge($results_not_ava,$results_avalable)) );
+						$this->response($this->json($error), 200);
+					/*} else{
+						$error = array('status' => "Success", 'msg' => "0 Result Found" );
+						$this->response($this->json($error), 200);
+					}*/
 			}
 
-		}
+		} else {
+				$ava_sql1 = "SELECT `doctor_user`.`du_name`,`doctor_user`.`du_email`,`doctor_user`.`du_phone_no`,`doctor_user`.`du_pic`,`doctor_user`.`du_address`,`doctor_user`.`du_city`,`doctor_user`.`du_district`,`doctor_user`.`du_state`,`doctor_user`.`du_state`,`doctor_user`.`specializaton`,`doctor_user`.`qualification` FROM `doctor_user`
+							WHERE `doctor_user`.`user_type`='0'
+							LIMIT 5 ";
+
+				$stmnt = $this->db->prepare($ava_sql1);
+				$searchResults = $stmnt->execute();
+				$results_avalable = $stmnt->fetchAll(PDO::FETCH_ASSOC);
+
+				//if( !empty($results_not_ava) && !empty($results_avalable) ){
+					$error = array('status' => "Success", 'msg' => "Result Found", 'data' => json_encode($results_avalable) );
+					$this->response($this->json($error), 200);
+				/*} else{
+					$error = array('status' => "Success", 'msg' => "0 Result Found" );
+					$this->response($this->json($error), 200);
+				}*/
+
+			}
+}
 //End Doctor Search
 
-//Check Doctor Availability
-		private function check_doc_availability(){
+//http://localhost/myapi/api.php?value=my_availability&doc_id=3
+//Doctor Set Availability
+		private function my_availability() {
 			if($this->get_request_method() != "POST"){
 				$this->response('',406);
 			}
+			if(isset($_GET['doc_id'])) {
+					if(!isset($_POST['start_date'])) {
+						$error = array('status' => "Failed", "msg" => "Parameter start_Date is required");
+						$this->response($this->json($error), 200);
+					}
+					if(!isset($_POST['end_date'])) {
+						$error = array('status' => "Failed", "msg" => "Parameter To end_date is required");
+						$this->response($this->json($error), 200);
+					}
+					if(!isset($_POST['from_time'])) {
+						$error = array('status' => "Failed", "msg" => "Parameter from_time is required");
+						$this->response($this->json($error), 200);
+					}
+					if(!isset($_POST['to_time'])) {
+						$error = array('status' => "Failed", "msg" => "Parameter to_time is required");
+						$this->response($this->json($error), 200);
+					}
+					if(!isset($_POST['address_to_visit'])) {
+						$error = array('status' => "Failed", "msg" => "Parameter address_to_visit is required");
+						$this->response($this->json($error), 200);
+					}
+					if(!isset($_POST['doct_visit_state'])) {
+						$error = array('status' => "Failed", "msg" => "Parameter doct_visit_state is required");
+						$this->response($this->json($error), 200);
+					}
+					if(!isset($_POST['doct_visit_city'])) {
+						$error = array('status' => "Failed", "msg" => "Parameter doct_visit_city is required");
+						$this->response($this->json($error), 200);
+					}
+					if(!isset($_POST['doct_visit_district'])) {
+						$error = array('status' => "Failed", "msg" => "Parameter doct_visit_district is required");
+						$this->response($this->json($error), 200);
+					}
+					if(!isset($_POST['doct_visit_pincode'])) {
+						$error = array('status' => "Failed", "msg" => "Parameter doct_visit_pincode is required");
+						$this->response($this->json($error), 200);
+					}
 
-			if(!isset($_GET['doc_id'])){
+					$doc_id = $_GET['doc_id'];
+					$start_date = isset($this->_request['start_date']) ? $this->_request['start_date'] : '';
+					$end_date = isset($this->_request['end_date']) ? $this->_request['end_date'] : '';
+					$from_time = isset($this->_request['from_time']) ? $this->_request['from_time'] : '';
+					$to_time = isset($this->_request['to_time']) ? $this->_request['to_time'] : '';
+
+					$doct_visit_address = isset($this->_request['address_to_visit']) ? $this->_request['address_to_visit'] : '';
+					$doct_visit_state = isset($this->_request['doct_visit_state']) ? $this->_request['doct_visit_state'] : '';
+					$doct_visit_city = isset($this->_request['to_time']) ? $this->_request['doct_visit_city'] : '';
+					$doct_visit_district = isset($this->_request['to_time']) ? $this->_request['doct_visit_district'] : '';
+					$doct_visit_pincode = isset($this->_request['to_time']) ? $this->_request['doct_visit_pincode'] : '';
+
+					$created_at = date('Y-m-d H:i:s');
+					$updated_at = date('Y-m-d H:i:s');
+
+					$dateRange = $this->createDateRangeArray($start_date, $end_date);
+		//Count date in difference
+			/*$diff = abs(strtotime($end_date) - strtotime($start_date));
+
+			$years = floor($diff / (365*60*60*24));
+			$months = floor(($diff - $years * 365*60*60*24) / (30*60*60*24));
+			$days = floor(($diff - $years * 365*60*60*24 - $months*30*60*60*24)/ (60*60*24));*/
+
+					if(!empty($start_date) && !empty($end_date) && !empty($from_time) && !empty($to_time) && !empty($doct_visit_address) && !empty($doct_visit_state) && !empty($doct_visit_city) && !empty($doct_visit_pincode) ) {
+
+						$sql = "SELECT `doc_availability`.`start_date`, `doc_availability`.`end_date`, `doc_availability`.`from_time`, `doc_availability`.`to_time`, `doc_availability_place`.`doc_id` FROM doc_availability INNER JOIN `doc_availability_place` ON `doc_availability_place`.`id` = `doc_availability`.`doc_ava_pla_id` WHERE `doc_availability_place`.`doc_id` = ".$doc_id." and `doc_availability`.`start_date`='".$start_date."' LIMIT 1";
+						$stmt = $this->db->prepare($sql);
+						$stmt->execute();
+					  $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+						/*$check_doc_availability = "SELECT doc_id,end_date FROM doc_availability WHERE doc_id = ".$doc_id." AND is_delete='0' LIMIT 1";
+						$stmt = $this->db->prepare($check_doc_availability);
+						$stmt->execute();
+					  $records = $stmt->fetchAll(PDO::FETCH_ASSOC);*/
+
+						$fetch_end_date = !empty($results) ? strtotime($results[0]['end_date']) : '';
+						$fetch_doc_id = !empty($results) ? strtotime($results[0]['doc_id']) : '';
+						$today_date = strtotime(date("Y-m-d"));
+
+						if($today_date > $fetch_end_date){
+							$date_query = "UPDATE doc_availability SET `is_delete`='1' ";
+							$execute = $this->db->query($date_query);
+						}
+
+						if(empty($results)) {
+							if(count($this->createDateRangeArray($start_date, $end_date))=='1') {
+
+								$sql = "INSERT INTO doc_availability_place (`doc_id`, `doct_visit_address`, `doct_visit_district`,`doct_visit_city`, `doct_visit_state`, `doct_visit_pincode`)
+												VALUES (".$doc_id.", '".$doct_visit_address."', '".$doct_visit_district."', '".$doct_visit_state."' , '".$doct_visit_city."' , '".$doct_visit_pincode."' )";
+								$execute = $this->db->query($sql);
+
+								$sql = "SELECT id FROM doc_availability_place ORDER BY id DESC LIMIT 1";
+								$stmt = $this->db->prepare($sql);
+								$searchResult = $stmt->execute();
+								$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+								$doc_availability_place_id = $results[0]['id'];
+
+								$sql = "INSERT INTO doc_availability (`doc_ava_pla_id`, `start_date`, `end_date`, `from_time`, `to_time`, `created_at`, `updated_at`)
+												VALUES (".$doc_availability_place_id.",'".$start_date."','".$end_date."', '".$from_time."', '".$to_time."', '".$created_at."', '".$updated_at."' )";
+								$execute = $this->db->query($sql);
+
+								/*$sql_query = "INSERT doc_availability_place SET `doct_visit_address`='".$doct_visit_address."', `doct_visit_city`='".$doct_visit_city."', `doct_visit_district`='".$doct_visit_district."',`doct_visit_state`='".$doct_visit_state."',`doct_visit_pincode`='".$doct_visit_pincode."' ";
+								$execute = $this->db->query($sql_query);*/
+
+								$error = array('status' => "Success", "msg" => "Data inserted successfully");
+								$this->response($this->json($error), 200);
+
+							} else{
+								$sql = "INSERT INTO doc_availability_place (`doc_id`, `doct_visit_address`, `doct_visit_district`,`doct_visit_city`, `doct_visit_state`, `doct_visit_pincode`)
+												VALUES (".$doc_id.", '".$doct_visit_address."', '".$doct_visit_district."', '".$doct_visit_state."' , '".$doct_visit_city."' , '".$doct_visit_pincode."' )";
+								$execute = $this->db->query($sql);
+
+								$sql = "SELECT id FROM doc_availability_place ORDER BY id DESC LIMIT 1";
+								$stmt = $this->db->prepare($sql);
+								$searchResult = $stmt->execute();
+								$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+								$doc_availability_place_id = $results[0]['id'];
+
+								foreach($dateRange as $dr) {
+										$sql = "INSERT INTO doc_availability
+										(`doc_ava_pla_id`, `start_date`, `end_date`, `from_time`, `to_time`, `created_at`, `updated_at`)
+										VALUES (".$doc_availability_place_id.",'".$dr."','".$dr."', '".$from_time."', '".$to_time."', '".$created_at."', '".$updated_at."' )";
+
+										$execute = $this->db->query($sql);
+								}
+								/*$sql_query = "UPDATE doctor_user SET `du_address`='".$doct_visit_address."', `du_city`='".$doct_visit_city."', `du_district`='".$doct_visit_district."',`du_state`='".$doct_visit_state."',`du_pincode`='".$doct_visit_pincode."' WHERE `du_id` = ".$doc_id." ";
+								$execute = $this->db->query($sql_query);*/
+
+								$error = array('status' => "Success", "msg" => "Data inserted successfully");
+								$this->response($this->json($error), 200);
+							}
+						} else{
+							$error = array('status' => "Failed", "msg" => "Data of this Date already inserted");
+							$this->response($this->json($error), 200);
+						}
+
+					} else{
+						$error = array('status' => "Failed", "msg" => "Please input all the fields");
+						$this->response($this->json($error), 200);
+					}
+			}else{
+				$error = array('status' => "Failed", "msg" => "No Doctor found");
+				$this->response($this->json($error), 200);
+			}
+		}
+// End Doctor Availability
+
+
+//http://localhost/myapi/api.php?value=check_doc_availability&doc_id=3
+//Check Doctor Availability
+		private function check_doc_availability() {
+			if($this->get_request_method() != "GET") {
+				$this->response('',406);
+			}
+
+			if(!isset($_GET['doc_id'])) {
 				$error = array('status' => "Failed", "msg" => "Doctor id is missing");
 				$this->response($this->json($error), 200);
 			} else{
-					$sql = "SELECT `doctor_user`.`du_name`,`doctor_user`.`du_email`,`doctor_user`.`du_phone_no`,`doctor_user`.`du_pic`,`doctor_user`.`du_address`,`doctor_user`.`du_city`,`doctor_user`.`du_district`,`doctor_user`.`du_state`,`doctor_user`.`du_pincode`,`doctor_user`.`specializaton`,`doctor_user`.`qualification`, `doc_availability`.`start_date`, `doc_availability`.`end_date`, `doc_availability`.`end_date`, `doc_availability`.`from_time`, `doc_availability`.`to_time`
-									FROM doctor_user
-									JOIN doc_availability ON `doc_availability`.`doc_id` = `doctor_user`.`du_id`
-									WHERE `doctor_user`.`du_id` = ".$_GET['doc_id']."  AND `user_type` = 0 LIMIT 1";
+					$todays_date = date('Y-m-d');
+
+					$sql = "SELECT `doctor_user`.`du_id`, `doctor_user`.`du_name`,`doctor_user`.`du_email`,`doctor_user`.`du_phone_no`,`doctor_user`.`du_pic`, `doctor_user`.`specializaton`,`doctor_user`.`qualification`, `doc_availability`.`start_date`, `doc_availability`.`end_date`, `doc_availability`.`from_time`, `doc_availability`.`to_time`, `doc_availability_place`.`doct_visit_address`, `doc_availability_place`.`doct_visit_state`, `doc_availability_place`.`doct_visit_city`,`doc_availability_place`.`doct_visit_district`,`doc_availability_place`.`doct_visit_pincode` FROM doctor_user
+					JOIN `doc_availability_place` ON `doc_availability_place`.`doc_id` = `doctor_user`.`du_id`
+					JOIN `doc_availability` ON `doc_availability`.`doc_ava_pla_id` = `doc_availability_place`.`id`
+					WHERE `doctor_user`.`du_id` = ".$_GET['doc_id']."  AND `user_type` = 0 LIMIT 1";
+
 					$stmt = $this->db->prepare($sql);
 					$searchResult = $stmt->execute();
 					$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-					$error = array('status' => "Success", "msg" => "Data Found", "data" => json_encode($results[0]));
-					$this->response($this->json($error), 200);
-			}
+						$startDate = $results[0]['start_date'];
+						$endDate = $results[0]['end_date'];
 
+					$check_date_in_range = $this->check_in_range($startDate, $endDate, $todays_date);
+
+				if(!empty($check_date_in_range)) {
+						$error = array('status' => 'Success', 'msg' => 'Data Found', 'data' => json_encode($results[0]));
+						$this->response($this->json($error), 200);
+				} else{
+
+					$sql = "SELECT `doctor_user`.`du_id`, `doctor_user`.`du_name`,`doctor_user`.`du_email`,`doctor_user`.`du_phone_no`,`doctor_user`.`du_pic`, `doctor_user`.`specializaton`,`doctor_user`.`qualification`, `doctor_user`.`du_address`, `doctor_user`.`du_city`,`doctor_user`.`du_district`,`doctor_user`.`du_state`,`doctor_user`.`du_pincode` FROM doctor_user WHERE `doctor_user`.`du_id` = ".$_GET['doc_id']."  AND `user_type` = 0 LIMIT 1";
+					$stmt = $this->db->prepare($sql);
+					$searchResult = $stmt->execute();
+					$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+					$error = array('status' => 'Success', 'msg' => 'Doctor Available', 'data' => json_encode($results[0]));
+					$this->response($this->json($error), 200);
+				}
+			}
 		}
 //End Check Doctor Availability
-
 
 		private function fix_appoitnment(){
 			if($this->get_request_method() != "POST"){
@@ -532,7 +812,6 @@ echo $sql;
 									}
 
 							}
-
 	//Lunch time
 						$lunch_st = "01:00:00";
 						$lunch_end = "02:00:00";
