@@ -273,72 +273,57 @@
 			$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 			if($stmt->rowCount()=='1')
 			{
-				if(!isset($_POST['name'])) {
-					$error = array('status' => "Failed", "msg" => "Parameter name is required");
-					$this->response($this->json($error), 200);
-				}
-				else if(!isset($_POST['address'])) {
-					$error = array('status' => "Failed", "msg" => "Parameter address is required");
-					$this->response($this->json($error), 200);
-				}
-				else if(isset($_POST['specializaton'])=='') {
-					$error = array('status' => "Failed", "msg" => "Parameter specializaton is required");
-					$this->response($this->json($error), 200);
-				}
-				else
+				if(isset($this->_request['name']) && $this->_request['name']!="")
 				{
-					if(isset($this->_request['name']) && $this->_request['name']!="")
-					{
-						$fields .=", du_name='".$this->_request['name']."'";
-					}
-					if(isset($this->_request['mobile_number']) && $this->_request['mobile_number']!="")
-					{
-						$fields .=", du_phone_no='".$this->_request['mobile_number']."'";
-					}
-					if(isset($this->_request['address']) && $this->_request['address']!="")
-					{
-						$fields .=", du_address='".$this->_request['address']."'";
-					}
-					if(isset($this->_request['city']) && $this->_request['city']!="")
-					{
-						$fields .=", du_city='".$this->_request['city']."'";
-					}
-					if(isset($this->_request['district']) && $this->_request['district']!="")
-					{
-						$fields .=", du_district='".$this->_request['district']."'";
-					}
-					if(isset($this->_request['state']) && $this->_request['state']!="")
-					{
-						$fields .=", du_state='".$this->_request['state']."'";
-					}
-					if(isset($this->_request['pin_code']) && $this->_request['pin_code']!="")
-					{
-						$fields .=", du_pincode='".$this->_request['pin_code']."'";
-					}
-					if(isset($this->_request['qualification']) && $this->_request['qualification']!="")
-					{
-						$fields .=", qualification='".$this->_request['qualification']."'";
-					}
-					if(isset($_FILES["fileUpload"]["name"]) && $_FILES["fileUpload"]["name"]!="")
-					{
-						$fields .=", du_pic='".$_FILES["fileUpload"]["name"]."'";
-					}
-					$updated_at = date('Y-m-d H:i:s');
-					if($user_image){
-						$image_name = uniqid();
-						$uploads_dir='images';
-						$tmp_name = $_FILES["fileUpload"]["tmp_name"];
-						$user_image = basename($_FILES["fileUpload"]["name"]);
-						move_uploaded_file($tmp_name, "$uploads_dir/$name");
-					}
-					$sql = "UPDATE doctor_user SET updated_at='".$updated_at."' {$fields} WHERE du_id='".$user_id."' ";
-					$stmt = $this->db->prepare($sql);
-					$update = $stmt->execute();
-					$fetchData = $stmt->fetchAll(PDO::FETCH_ASSOC);
-					if(count($update)==1){
-						$error = array('status' => "Success", "msg" => "Profile Updated");
-						$this->response($this->json($error), 200);
-					}
+					$fields .=", du_name='".$this->_request['name']."'";
+				}
+				if(isset($this->_request['mobile_number']) && $this->_request['mobile_number']!="")
+				{
+					$fields .=", du_phone_no='".$this->_request['mobile_number']."'";
+				}
+				if(isset($this->_request['address']) && $this->_request['address']!="")
+				{
+					$fields .=", du_address='".$this->_request['address']."'";
+				}
+				if(isset($this->_request['city']) && $this->_request['city']!="")
+				{
+					$fields .=", du_city='".$this->_request['city']."'";
+				}
+				if(isset($this->_request['district']) && $this->_request['district']!="")
+				{
+					$fields .=", du_district='".$this->_request['district']."'";
+				}
+				if(isset($this->_request['state']) && $this->_request['state']!="")
+				{
+					$fields .=", du_state='".$this->_request['state']."'";
+				}
+				if(isset($this->_request['pin_code']) && $this->_request['pin_code']!="")
+				{
+					$fields .=", du_pincode='".$this->_request['pin_code']."'";
+				}
+				if(isset($this->_request['qualification']) && $this->_request['qualification']!="")
+				{
+					$fields .=", qualification='".$this->_request['qualification']."'";
+				}
+				if(isset($_FILES["fileUpload"]["name"]) && $_FILES["fileUpload"]["name"]!="")
+				{
+					$fields .=", du_pic='".$_FILES["fileUpload"]["name"]."'";
+				}
+				$updated_at = date('Y-m-d H:i:s');
+				if($user_image){
+					$image_name = uniqid();
+					$uploads_dir='images';
+					$tmp_name = $_FILES["fileUpload"]["tmp_name"];
+					$user_image = basename($_FILES["fileUpload"]["name"]);
+					move_uploaded_file($tmp_name, "$uploads_dir/$name");
+				}
+				$sql = "UPDATE doctor_user SET updated_at='".$updated_at."' {$fields} WHERE du_id='".$user_id."' ";
+				$stmt = $this->db->prepare($sql);
+				$update = $stmt->execute();
+				$fetchData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+				if(count($update)==1){
+					$error = array('status' => "Success", "msg" => "Profile Updated");
+					$this->response($this->json($error), 200);
 				}
 			} else {
 				// When record not found using the given userID
