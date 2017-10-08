@@ -346,7 +346,24 @@
 			$pincode = isset($this->_request['pincode']) ? '%'.$this->_request['pincode'].'%' :'';
 			try
 			{
-				$query="SELECT du.du_id, du.du_name, du.du_phone_no, du.du_pic, du.du_city,du.du_district, du.du_state, du.du_pincode, du.specializaton, du.qualification, du.du_address, da.start_date, da.address FROM doctor_user du LEFT JOIN doctor_availability da ON du.du_id = da.du_id LEFT JOIN m_city mc ON du.du_city = mc.cty_id LEFT JOIN m_state ms ON du.du_state = ms.st_id";
+				$where = " WHERE 1";
+				if(isset($this->_request['name']) && $this->_request['name']!='')
+				{
+					$where .=" AND du.du_name like '%".$this->_request['name']."%'";
+				}
+				if(isset($this->_request['mobile_number']) && $this->_request['mobile_number']!='')
+				{
+					$where .=" AND du.du_phone_no like '%".$this->_request['mobile_number']."%'";
+				}
+				if(isset($this->_request['specializaton']) && $this->_request['specializaton']!='')
+				{
+					$where .=" AND du.specializaton like '%".$this->_request['specializaton']."%'";
+				}
+				if(isset($this->_request['pincode']) && $this->_request['pincode']!='')
+				{
+					$where .=" AND du.du_pincode like '%".$this->_request['pincode']."%'";
+				}
+				$query="SELECT du.du_id, du.du_name, du.du_phone_no, du.du_pic, du.du_city,du.du_district, du.du_state, du.du_pincode, du.specializaton, du.qualification, du.du_address, da.start_date, da.address FROM doctor_user du LEFT JOIN doctor_availability da ON du.du_id = da.du_id LEFT JOIN m_city mc ON du.du_city = mc.cty_id LEFT JOIN m_state ms ON du.du_state = ms.st_id {$where}";
 				$stmt = $this->db->prepare($query);
 				$stmt->execute();
 				$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
