@@ -95,45 +95,44 @@
 			if($this->get_request_method() != "POST"){
 				$this->response('',406);
 			}
-			if(!isset($_POST['password']) && !isset($_POST['email'])) {
-				$error = array('status' => "Failed", "msg" => "Parameter email and password is required");
-				$this->response($this->json($error), 200);
-			}
-			if(!isset($_POST['email'])) {
-				$error = array('status' => "Failed", "msg" => "Parameter email is required");
-				$this->response($this->json($error), 200);
-			}
-			if(!isset($_POST['password'])) {
-				$error = array('status' => "Failed", "msg" => "Parameter password is required");
-				$this->response($this->json($error), 200);
-			}
-
-			$email = $this->_request['email'];
-			$password = $this->_request['password'];
-			$hashed_password = sha1($password);
-			// Input validations
-			if(!empty($email) and !empty($password)) {
-				if(filter_var($email, FILTER_VALIDATE_EMAIL)) {
-					$sql = "SELECT du_name,du_email,du_phone_no,du_pic,du_address,remember_token FROM doctor_user WHERE du_email = '$email' AND du_password = '".$hashed_password."' LIMIT 1";
-					$stmt = $this->db->prepare($sql);
-					$stmt->execute();
-				  $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-          //$results = $stmt->fetchAll(PDO::FETCH_OBJ);
-          if($stmt->rowCount()=='0') {
-              $error = array('status' => "Failed", "msg" => "Invalid Email address or Password");
-              $this->response($this->json($error), 200);
-            }
-						$error = array('status' => "Success", "msg" => "Sucessfully Login!", "data" => json_encode($results) );
-						$this->response($this->json($error), 200);
+			try{
+				if(!isset($_POST['password']) && !isset($_POST['email'])) {
+					throw new Exception("Parameter email and password is required");
 				}
-			} else{
-				$error = array('status' => "Failed", "msg" => "Fields are required");
+				if(!isset($_POST['email'])) {
+					throw new Exception("Parameter email is required");
+				}
+				if(!isset($_POST['password'])) {
+					throw new Exception("Parameter password is required");
+				}
+
+				$email = $this->_request['email'];
+				$password = $this->_request['password'];
+				$hashed_password = sha1($password);
+				// Input validations
+				if(!empty($email) and !empty($password)) {
+					if(filter_var($email, FILTER_VALIDATE_EMAIL)) {
+						$sql = "SELECT du_name,du_email,du_phone_no,du_pic,du_address,remember_token FROM doctor_user WHERE du_email = '$email' AND du_password = '".$hashed_password."' LIMIT 1";
+						$stmt = $this->db->prepare($sql);
+						$stmt->execute();
+					  $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+	          //$results = $stmt->fetchAll(PDO::FETCH_OBJ);
+	          if($stmt->rowCount()=='0') {
+	              throw new Exception("Invalid Email address or Password");
+	            }
+							$error = array('status' => "Success", "msg" => "Sucessfully Login!", "data" => json_encode($results) );
+							$this->response($this->json($error), 200);
+					}
+				} else{
+					throw new Exception("Fields are required");
+				}
+			}
+			catch(Exception $ex)
+			{
+				$error = array('status' => "Failed", "msg" => $ex->getMessage());
 				$this->response($this->json($error), 200);
 			}
-
 			// If invalid inputs "Bad Request" status message and reason
-			$error = array('status' => "Failed", "msg" => "Invalid Email address or Password");
-			$this->response($this->json($error), 200);
 		}
 // End Login of Doctor and User
 
@@ -347,6 +346,7 @@
 			try
 			{
 				$where = " WHERE 1";
+				$where1 = "";
 				if(isset($this->_request['name']) && $this->_request['name']!='')
 				{
 					$where .=" AND du.du_name like '%".$this->_request['name']."%'";
@@ -363,7 +363,17 @@
 				{
 					$where .=" AND du.du_pincode like '%".$this->_request['pincode']."%'";
 				}
-				$query="SELECT du.du_id, du.du_name, du.du_phone_no, du.du_pic, du.du_city,du.du_district, du.du_state, du.du_pincode, du.specializaton, du.qualification, du.du_address, da.start_date, da.address FROM doctor_user du LEFT JOIN doctor_availability da ON du.du_id = da.du_id LEFT JOIN m_city mc ON du.du_city = mc.cty_id LEFT JOIN m_state ms ON du.du_state = ms.st_id {$where}";
+				if(isset($this->_request['from_date']) && $this->_request['from_date']!='' && isset($this->_request['to_date']) && $this->_request['to_date']!='')
+				{
+					$fromdate = date('Y-m-d',strtotime($this->_request['from_date']));
+					$todate = date('Y-m-d',strtotime($this->_request['to_date']));
+					$where .=" AND date_format(da.start_date,'%Y-%m-%d') >= '".$fromdate."' AND date_format(da.end_date,'%Y-%m-%d') <= '".$todate."'";
+				}
+				else
+				{
+					$where1 .=" AND date_format(da.start_date,'%Y-%m-%d') >= '".date('Y-m-d')."'";	
+				}
+				$query="SELECT du.du_id, du.du_name, du.du_phone_no, du.du_pic, du.du_city,du.du_district, du.du_state, du.du_pincode, du.specializaton, du.qualification, du.du_address, da.start_date, da.address FROM doctor_user du LEFT JOIN doctor_availability da ON du.du_id = da.du_id {$where1} LEFT JOIN m_city mc ON du.du_city = mc.cty_id LEFT JOIN m_state ms ON du.du_state = ms.st_id {$where}";
 				$stmt = $this->db->prepare($query);
 				$stmt->execute();
 				$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
