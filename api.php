@@ -422,7 +422,7 @@
 				{
 					$where .=" AND du.du_pincode like '%".$this->_request['pincode']."%'";
 				}
-				if(isset($this->_request['from_date']) && $this->_request['from_date']!='' && isset($this->_request['to_date']) && $this->_request['to_date']!='')
+				/*if(isset($this->_request['start_date_time']) && $this->_request['end_date_time']!='')
 				{
 					$fromdate = date('Y-m-d',strtotime($this->_request['from_date']));
 					$todate = date('Y-m-d',strtotime($this->_request['to_date']));
@@ -431,8 +431,14 @@
 				else
 				{
 					$where1 .=" AND date_format(da.start_date,'%Y-%m-%d') >= '".date('Y-m-d')."'";
-				}
-				$query="SELECT du.du_id, du.du_name, du.du_phone_no, du.du_pic, du.du_city,du.du_district, du.du_state, du.du_pincode, du.specializaton, du.qualification, du.du_address, da.start_date, da.address FROM doctor_user du LEFT JOIN doctor_availability da ON du.du_id = da.du_id {$where1} LEFT JOIN m_city mc ON du.du_city = mc.cty_id LEFT JOIN m_state ms ON du.du_state = ms.st_id {$where}";
+				}*/
+				$query="SELECT du.du_id, du.du_name, du.du_phone_no, du.du_pic, du.du_city,du.du_district,
+				du.du_state, du.du_pincode, du.specializaton, du.qualification, du.du_address,
+				da.start_date_time, da.doctor_visit_add, DISTINCT(da.doctor_visit_state_id),
+				FROM doctor_user du
+				LEFT JOIN doctor_availability da ON du.du_id = da.doc_id {$where1}
+				LEFT JOIN m_city mc ON du.du_city = mc.cty_id
+				LEFT JOIN m_state ms ON du.du_state = ms.st_id {$where}";
 				$stmt = $this->db->prepare($query);
 				$stmt->execute();
 				$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -446,6 +452,33 @@
 			}
 		}
 		//End Doctor Search
+
+//Fetch particular record of doctor
+		public function doctor_availability() {
+			if($this->get_request_method() != "GET"){
+				$this->response('',406);
+			}
+
+			if($_GET['doc_id']){
+				$doctor_id = $_GET['doc_id'];
+				$sql = "SELECT du.du_name, du.du_email, du.du_phone_no, du.du_pic, du.du_address,
+				du.du_city, du.du_district, du.du_state, du.du_pincode, du.specializaton, du.qualification,
+				da.start_date_time, da.end_date_time, da.doctor_visit_add, da.doctor_visit_district, da.doctor_visit_pincode_id,
+				st.st_name, ct.cty_name
+				FROM doctor_user as du
+				LEFT JOIN doctor_availability as da ON da.doc_id = du.du_id
+				LEFT JOIN m_state as st ON st.st_id = da.doctor_visit_state_id
+				LEFT JOIN m_city as ct ON ct.cty_id = da.doctor_visit_city_id
+				WHERE du.du_id = $doctor_id ORDER BY end_date_time DESC LIMIT 10";
+
+				$stmt = $this->db->prepare($sql);
+				$stmt->execute();
+				$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+				$error = array('status' => "Sucess", "msg" =>"Availability Data", "data" => $result);
+				$this->response($this->json($error), 200);
+			}
+		}
+		//End docotor record
 //http://localhost/myapi/api.php?value=my_availability&doc_id=3
 //Doctor Set Availability
 		private function my_availability() {
