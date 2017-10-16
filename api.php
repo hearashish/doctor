@@ -7,7 +7,7 @@
 		const DB_SERVER = "localhost";
 		const DB_USER = "root";
 		const DB_PASSWORD = "";
-		const DB = "db_api";
+		const DB = "doctor";
 
 		private $db = NULL;
 
@@ -15,7 +15,27 @@
 			parent::__construct();				// Init parent contructor
 			$this->dbConnect();					// Initiate Database connection
 		}
-
+		/*
+		 *  Database connection
+		*/
+		private function dbConnect(){
+			//$this->db = mysql_connect(self::DB_SERVER,self::DB_USER,self::DB_PASSWORD);
+			$this->db = new PDO('mysql:host=localhost; dbname=doctor','root','');
+			//if($this->db)
+				//mysql_select_db(self::DB,$this->db);
+		}
+		/*
+		 * Public method for access api.
+		 * This method dynmically call the method based on the query string
+		 *
+		 */
+		public function processApi(){
+			$func = strtolower(trim(str_replace("/","",$_REQUEST['value'])));
+			if((int)method_exists($this,$func) > 0)
+				$this->$func();
+			else
+				$this->response('',404);				// If the method not exist with in this class, response would be "Page not found".
+		}
 		public function imageValidation($fileName) {
 					$allowedExtensions = array("jpg","png","jpeg");
 					$image_name = uniqid();
@@ -46,6 +66,7 @@
 					$stmt = $this->db->prepare($sql);
 					$stmt->execute();
 					$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 						$error = array('status' => "Failed", "msg" => "State Results", "Data"=>$results);
 						return $this->response($this->json($error), 200);
 				}
@@ -71,7 +92,6 @@
 				while($start <= $end);
 				return $range;
 			}
-
 // Check date in Range
 	function check_in_range($start_date, $end_date, $date_from_user)
 		{
@@ -82,27 +102,7 @@
 		  // Check that user date is between start & end
 		  return (($user_ts >= $start_ts) && ($user_ts <= $end_ts));
 		}
-		/*
-		 *  Database connection
-		*/
-		private function dbConnect(){
-			//$this->db = mysql_connect(self::DB_SERVER,self::DB_USER,self::DB_PASSWORD);
-			$this->db = new PDO('mysql:host=localhost; dbname=db_api','root','');
-			//if($this->db)
-				//mysql_select_db(self::DB,$this->db);
-		}
-		/*
-		 * Public method for access api.
-		 * This method dynmically call the method based on the query string
-		 *
-		 */
-		public function processApi(){
-			$func = strtolower(trim(str_replace("/","",$_REQUEST['value'])));
-			if((int)method_exists($this,$func) > 0)
-				$this->$func();
-			else
-				$this->response('',404);				// If the method not exist with in this class, response would be "Page not found".
-		}
+
 		/*
 		 *	Simple login API
 		 *  Login must be POST method
@@ -118,8 +118,122 @@
 
  		    return $key;
  		}
+
+		// Doctor Registeration
+				public function doctor_registeration() {
+					// Cross validation if the request method is POST else it will return "Not Acceptable" status
+					if($this->get_request_method() != "POST"){
+						$this->response('',406);
+					}
+					if(!isset($_POST['password']) && !isset($_POST['email']) && !isset($_POST['name']) && !isset($_POST['confirm_password']) && !isset($_POST['mobile_number']) ) {
+						$error = array('status' => "Failed", "msg" => "Parameter name, email, mobile no,password and confirm_password are require");
+						$this->response($this->json($error), 200);
+					}
+					if(!isset($_POST['name'])) {
+						$error = array('status' => "Failed", "msg" => "Parameter name is required");
+						$this->response($this->json($error), 200);
+					}
+					if(!isset($_POST['email'])) {
+						$error = array('status' => "Failed", "msg" => "Parameter email is required");
+						$this->response($this->json($error), 200);
+					}
+					if(!isset($_POST['password'])) {
+						$error = array('status' => "Failed", "msg" => "Parameter password is required");
+						$this->response($this->json($error), 200);
+					}
+					if(!isset($_POST['confirm_password'])) {
+						$error = array('status' => "Failed", "msg" => "Parameter Confirm password is required");
+						$this->response($this->json($error), 200);
+					}
+					if(!isset($_POST['qualification'])) {
+						$error = array('status' => "Failed", "msg" => "Parameter qualification is required");
+						$this->response($this->json($error), 200);
+					}
+					if(!isset($_POST['specializaton'])) {
+						$error = array('status' => "Failed", "msg" => "Parameter specializaton is required");
+						$this->response($this->json($error), 200);
+					}
+					if(!isset($_POST['mobile_number'])) {
+						$error = array('status' => "Failed", "msg" => "Parameter mobile_number is required");
+						$this->response($this->json($error), 200);
+					}
+
+					$name = $this->_request['name'];
+					$email = $this->_request['email'];
+					$password = $this->_request['password'];
+					$cpassword = $this->_request['confirm_password'];
+					$phone_no = $this->_request['mobile_number'];
+					$user_image = isset($_FILES["fileUpload"]["name"]) ? $_FILES["fileUpload"]["name"] : '';
+					$address = isset($this->_request['address']) ? $this->_request['address'] : '' ;
+					$city = isset($this->_request['city']) ? $this->_request['city'] : '';
+					$district = isset($this->_request['district']) ? $this->_request['district'] : '';
+					$state = isset($this->_request['state']) ? $this->_request['state'] : '';
+					$pincode = isset($this->_request['pincode']) ? $this->_request['pincode'] : '';
+					$qualification = isset($this->_request['qualification']) ? $this->_request['qualification'] : '';
+					$specializaton = isset($this->_request['specializaton']) ? $this->_request['specializaton'] : '';
+
+					$created_at = date('Y-m-d H:i:s');
+					$updated_at = date('Y-m-d H:i:s');
+
+					//Upload image
+					if($user_image){
+						$this->imageValidation($_FILES["fileUpload"]["name"]);
+					}
+
+					if($phone_no || $email) {
+					$checkphoneExists = "SELECT du_id FROM `table_doctor` WHERE (`du_phone_no` = '".$phone_no."') OR (`du_email` = '".$email."')";
+					$stmt = $this->db->prepare($checkphoneExists);
+					$stmt->execute();
+					$fetchData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+					if(count($fetchData)==0) {
+							if(!isset($phone_no)) {
+								$error = array('status' => "Failed", "msg" => "Mobile number is required");
+								$this->response($this->json($error), 200);
+							}
+							if(strlen($phone_no)!='10'){
+								$error = array('status' => "Failed", "msg" => "Mobile number should be of 10 digit");
+								$this->response($this->json($error), 200);
+							}
+							if(!is_numeric($phone_no)){
+								$error = array('status' => "Failed", "msg" => "Number are allowed only");
+								$this->response($this->json($error), 200);
+							}
+							if($password!=$cpassword){
+								$error = array('status' => "Failed", "msg" => "Password and Confirm password is not matched");
+								$this->response($this->json($error), 200);
+							}
+							// Input validations
+							if(!empty($name) and !empty($email) and !empty($password) and !empty($cpassword)) {
+
+									$hashed_password = sha1($password);
+									$token_value = 'Api'.$this->getToken(50);
+
+									    $sql = "INSERT INTO table_doctor (`du_name`, `du_email`, `du_phone_no`, `du_pic`, `du_password`, `du_address`, `du_city`, `du_district`, `du_state`, `du_pincode`,`remember_token`, `specializaton`, `qualification`, `created_at`, `updated_at`)
+											VALUES ('".$name."', '".$email."', ".$phone_no.", '".$user_image."', '".$hashed_password."', '".$address."', '".$city."', '".$district."', '".$state."', '".$pincode."','".$token_value."', '".$specializaton."', '".$qualification."', '".$created_at."', '".$updated_at."' )";
+											$execute = $this->db->query($sql);
+											//$temp = $this->db->lastInsertId(); //Fetch the last instered ID
+
+											$error = array('status' => "Sucess", "msg" => "Doctor Successfully created!");
+											$this->response($this->json($error), 200);
+							} else{
+							$error = array('status' => "Failed", "msg" => "Name, Email password and confirm_password required");
+							$this->response($this->json($error), 200);
+						}
+					} else{
+					$error = array('status' => "Failed", "msg" => "Email ID or Phone number already exists");
+					$this->response($this->json($error), 200);
+				}
+			}
+					// If invalid inputs "Bad Request" status message and reason
+					$error = array('status' => "Failed", "msg" => "Invalid Email address or Password");
+					$this->response($this->json($error), 200);
+			}
+			// End Registeration
+
+
 // Login of Doctor and User
-		private function login() {
+		private function doctor_login() {
 			// Cross validation if the request method is POST else it will return "Not Acceptable" status
 			if($this->get_request_method() != "POST"){
 				$this->response('',406);
@@ -140,13 +254,14 @@
 			$password = $this->_request['password'];
 			$hashed_password = sha1($password);
 			// Input validations
+
 			if(!empty($email) and !empty($password)) {
 				if(filter_var($email, FILTER_VALIDATE_EMAIL)) {
-					$sql = "SELECT du_name,du_email,du_phone_no,du_pic,du_address,remember_token FROM doctor_user WHERE du_email = '$email' AND du_password = '".$hashed_password."' LIMIT 1";
+					$sql = "SELECT du_name,du_email,du_phone_no,du_pic,du_address,remember_token FROM table_doctor WHERE du_email = '$email' AND du_password = '".$hashed_password."' LIMIT 1";
 					$stmt = $this->db->prepare($sql);
 					$stmt->execute();
 				  $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-          //$results = $stmt->fetchAll(PDO::FETCH_OBJ);
+
           if($stmt->rowCount()=='0') {
               $error = array('status' => "Failed", "msg" => "Invalid Email address or Password");
               $this->response($this->json($error), 200);
@@ -163,131 +278,10 @@
 			$this->response($this->json($error), 200);
 		}
 // End Login of Doctor and User
-//http://localhost/myapi/api.php?value=registeration&user_id=0
-// Registeration
-		public function registeration() {
-			// Cross validation if the request method is POST else it will return "Not Acceptable" status
-			if($this->get_request_method() != "POST"){
-				$this->response('',406);
-			}
-			if(!isset($_POST['password']) && !isset($_POST['email']) && !isset($_POST['name']) && !isset($_POST['confirm_password']) && !isset($_POST['mobile_number']) ) {
-				$error = array('status' => "Failed", "msg" => "Parameter name, email, mobile no,password and confirm_password are require");
-				$this->response($this->json($error), 200);
-			}
-			if(!isset($_POST['name'])) {
-				$error = array('status' => "Failed", "msg" => "Parameter name is required");
-				$this->response($this->json($error), 200);
-			}
-			if(!isset($_POST['email'])) {
-				$error = array('status' => "Failed", "msg" => "Parameter email is required");
-				$this->response($this->json($error), 200);
-			}
-			if(!isset($_POST['password'])) {
-				$error = array('status' => "Failed", "msg" => "Parameter password is required");
-				$this->response($this->json($error), 200);
-			}
-			if(!isset($_POST['confirm_password'])) {
-				$error = array('status' => "Failed", "msg" => "Parameter Confirm password is required");
-				$this->response($this->json($error), 200);
-			}
-			if(!isset($_POST['qualification'])) {
-				$error = array('status' => "Failed", "msg" => "Parameter qualification is required");
-				$this->response($this->json($error), 200);
-			}
-			if(!isset($_POST['specializaton'])) {
-				$error = array('status' => "Failed", "msg" => "Parameter specializaton is required");
-				$this->response($this->json($error), 200);
-			}
-			if(!isset($_POST['mobile_number'])) {
-				$error = array('status' => "Failed", "msg" => "Parameter mobile_number is required");
-				$this->response($this->json($error), 200);
-			}
-			if(!isset($_POST['doctor_user_id'])) {
-				$error = array('status' => "Failed", "msg" => "Parameter doctor_user_id is required");
-				$this->response($this->json($error), 200);
-			}
-			$name = $this->_request['name'];
-			$email = $this->_request['email'];
-			$password = $this->_request['password'];
-			$cpassword = $this->_request['confirm_password'];
-			$phone_no = $this->_request['mobile_number'];
-			$user_image = isset($_FILES["fileUpload"]["name"]) ? $_FILES["fileUpload"]["name"] : '';
-			$address = isset($this->_request['address']) ? $this->_request['address'] : '' ;
-			$city = isset($this->_request['city']) ? $this->_request['city'] : '';
-			$district = isset($this->_request['district']) ? $this->_request['district'] : '';
-			$state = isset($this->_request['state']) ? $this->_request['state'] : '';
-			$pincode = isset($this->_request['pincode']) ? $this->_request['pincode'] : '';
-			$qualification = isset($this->_request['qualification']) ? $this->_request['qualification'] : '';
-			$specializaton = isset($this->_request['specializaton']) ? $this->_request['specializaton'] : '';
-			$doctor_user_id = $this->_request['doctor_user_id'];
-			$created_at = date('Y-m-d H:i:s');
-			$updated_at = date('Y-m-d H:i:s');
 
-			//Upload image
-			if($user_image){
-				$this->imageValidation($_FILES["fileUpload"]["name"]);
-			}
-
-			$checkphoneExists = "SELECT du_id FROM `doctor_user` WHERE (`du_phone_no` = '".$phone_no."') OR (`du_email` = '".$email."')";
-			$stmt = $this->db->prepare($checkphoneExists);
-			$stmt->execute();
-			$fetchData = $stmt->fetchAll(PDO::FETCH_ASSOC);
-			if(count($fetchData)==0) {
-					if(!isset($phone_no)) {
-						$error = array('status' => "Failed", "msg" => "Mobile number is required");
-						$this->response($this->json($error), 200);
-					}
-					if(strlen($phone_no)!='10'){
-						$error = array('status' => "Failed", "msg" => "Mobile number should be of 10 digit");
-						$this->response($this->json($error), 200);
-					}
-					if(!is_numeric($phone_no)){
-						$error = array('status' => "Failed", "msg" => "Number are allowed only");
-						$this->response($this->json($error), 200);
-					}
-					if($password!=$cpassword){
-						$error = array('status' => "Failed", "msg" => "Password and Confirm password is not matched");
-						$this->response($this->json($error), 200);
-					}
-					// Input validations
-					if(!empty($name) and !empty($email) and !empty($password) and !empty($cpassword)) {
-
-							$hashed_password = sha1($password);
-							$token_value = 'Api'.$this->getToken(50);
-
-							if($doctor_user_id=='1') {  // Client Data Store
-
-									$sql = "INSERT INTO doctor_user (`du_name`, `du_email`, `du_phone_no`, `du_pic`, `user_type`, `du_password`, `du_address`, `du_city`, `du_district`, `du_state`, `du_pincode` ,`remember_token`, `specializaton`, `qualification`,`created_at`, `updated_at`)
-									VALUES ('".$name."','".$email."',".$phone_no.", '".$user_image."' , '1','".$hashed_password."', '".$address."', '".$city."', '".$district."', '".$state."', '".$pincode."','".$token_value."', '', '', '".$created_at."','".$updated_at."' )";
-									$execute = $this->db->query($sql);
-
-									$error = array('status' => "Sucess", "msg" => "User Successfully created!");
-									$this->response($this->json($error), 200);
-							  }
-								if($doctor_user_id == '0') { // Doctor Data Store
-
-							    $sql = "INSERT INTO doctor_user (`du_name`, `du_email`, `du_phone_no`, `du_pic`, `user_type`, `du_password`, `du_address`, `du_city`, `du_district`, `du_state`, `du_pincode` ,`remember_token`, `specializaton`, `qualification`, `created_at`, `updated_at`)
-									VALUES ('".$name."', '".$email."', ".$phone_no.", '".$user_image."', '0','".$hashed_password."', '".$address."', '".$city."', '".$district."', '".$state."', '".$pincode."', '".$token_value."', '".$specializaton."', '".$qualification."', '".$created_at."', '".$updated_at."' )";
-									$execute = $this->db->query($sql);
-
-									$error = array('status' => "Sucess", "msg" => "Doctor Successfully created!");
-									$this->response($this->json($error), 200);
-							  }
-					} else{
-					$error = array('status' => "Failed", "msg" => "Name, Email password and confirm_password required");
-					$this->response($this->json($error), 200);
-				}
-			} else{
-			$error = array('status' => "Failed", "msg" => "Email ID or Phone number already exists");
-			$this->response($this->json($error), 200);
-		}
-			// If invalid inputs "Bad Request" status message and reason
-			$error = array('status' => "Failed", "msg" => "Invalid Email address or Password");
-			$this->response($this->json($error), 200);
-	}
-	// End Registeration
+				//http://localhost/myapi/api.php?value=registeration
 		// Profile Updation
-		private function reset_password(){
+		private function doctor_reset_password(){
 			if($this->get_request_method() != "POST"){
 				$this->response('',406);
 			}
@@ -299,12 +293,12 @@
 				$error = array('status' => "Failed", "msg" => "Parameter confirm_password are require");
 				$this->response($this->json($error), 200);
 			}
-			if(!isset($_POST['doctor_user_id']) ) {
-				$error = array('status' => "Failed", "msg" => "Parameter doctor_user_id are require");
+			if(!isset($_POST['table_doctor_id']) ) {
+				$error = array('status' => "Failed", "msg" => "Parameter table_doctor_id are require");
 				$this->response($this->json($error), 200);
 			}
 
-			$user_id = $this->_request['doctor_user_id'];
+			$user_id = $this->_request['table_doctor_id'];
 			$password = $this->_request['password'];
 			$cpassword = $this->_request['confirm_password'];
 			if( !empty($user_id) && !empty($password) && !empty($cpassword) ) {
@@ -314,7 +308,7 @@
 					$this->response($this->json($error), 200);
 				} else{
 						$hashed_password = sha1($password);
-						$sql = "UPDATE doctor_user SET du_password='".$hashed_password."' WHERE du_id='".$user_id."' ";
+						$sql = "UPDATE table_doctor SET du_password='".$hashed_password."' WHERE du_id='".$user_id."' ";
 						$stmt = $this->db->prepare($sql);
 						$update = $stmt->execute();
 						$fetchData = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -326,9 +320,9 @@
 			}
 		}
 
-		private function profile_updation() {
-			$user_id = $this->_request['doctor_user_id'];
-			$sql = "SELECT * FROM doctor_user WHERE du_id=$user_id LIMIT 1";
+		private function docotor_profile_updation() {
+			$user_id = $this->_request['table_doctor_id'];
+			$sql = "SELECT * FROM table_doctor WHERE du_id=$user_id LIMIT 1";
 			$stmt = $this->db->prepare($sql);
 			$stmt->execute();
 			$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -376,7 +370,7 @@
 					$this->imageValidation($_FILES["fileUpload"]["name"]);
 				}
 
-				$sql = "UPDATE doctor_user SET updated_at='".$updated_at."' {$fields} WHERE du_id='".$user_id."' ";
+				$sql = "UPDATE table_doctor SET updated_at='".$updated_at."' {$fields} WHERE du_id='".$user_id."' ";
 				$stmt = $this->db->prepare($sql);
 				$update = $stmt->execute();
 				$fetchData = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -435,7 +429,7 @@
 				$query="SELECT du.du_id, du.du_name, du.du_phone_no, du.du_pic, du.du_city,du.du_district,
 				du.du_state, du.du_pincode, du.specializaton, du.qualification, du.du_address,
 				da.start_date_time, da.doctor_visit_add, DISTINCT(da.doctor_visit_state_id),
-				FROM doctor_user du
+				FROM table_doctor du
 				LEFT JOIN doctor_availability da ON du.du_id = da.doc_id {$where1}
 				LEFT JOIN m_city mc ON du.du_city = mc.cty_id
 				LEFT JOIN m_state ms ON du.du_state = ms.st_id {$where}";
@@ -465,7 +459,7 @@
 				du.du_city, du.du_district, du.du_state, du.du_pincode, du.specializaton, du.qualification,
 				da.start_date_time, da.end_date_time, da.doctor_visit_add, da.doctor_visit_district, da.doctor_visit_pincode_id,
 				st.st_name, ct.cty_name
-				FROM doctor_user as du
+				FROM table_doctor as du
 				LEFT JOIN doctor_availability as da ON da.doc_id = du.du_id
 				LEFT JOIN m_state as st ON st.st_id = da.doctor_visit_state_id
 				LEFT JOIN m_city as ct ON ct.cty_id = da.doctor_visit_city_id
@@ -596,17 +590,17 @@
 				$this->response('',406);
 			}
 					$todays_date = date('Y-m-d');
-					$sql = "SELECT `doctor_user`.`du_id`, `doctor_user`.`du_name`, `doctor_user`.`du_email`,
-					`doctor_user`.`du_phone_no`, `doctor_user`.`du_pic`, `doctor_user`.`specializaton`,
-					`doctor_user`.`qualification`, `doctor_availability`.`start_date_time`,
+					$sql = "SELECT `table_doctor`.`du_id`, `table_doctor`.`du_name`, `table_doctor`.`du_email`,
+					`table_doctor`.`du_phone_no`, `table_doctor`.`du_pic`, `table_doctor`.`specializaton`,
+					`table_doctor`.`qualification`, `doctor_availability`.`start_date_time`,
 					`doctor_availability`.`end_date_time`, `doctor_availability`.`doctor_visit_add`,
 					`doctor_availability`.`doctor_visit_district`,`doctor_availability`.`doctor_visit_pincode_id`,
 					`m_state`.`st_name`, `m_city`.`cty_id`
-					FROM doctor_user
-					JOIN `doctor_availability` ON `doctor_availability`.`doc_id` = `doctor_user`.`du_id`
+					FROM table_doctor
+					JOIN `doctor_availability` ON `doctor_availability`.`doc_id` = `table_doctor`.`du_id`
 					LEFT JOIN m_city ON `m_city`.`cty_id` = `doctor_availability`.`doctor_visit_city_id`
 					LEFT JOIN m_state ON `m_state`.`st_id` = `doctor_availability`.`doctor_visit_state_id`
-					WHERE `doctor_user`.`du_id` = ".$_GET['doc_id']."  AND `user_type` = 0 LIMIT 1";
+					WHERE `table_doctor`.`du_id` = ".$_GET['doc_id']."  AND `user_type` = 0 LIMIT 1";
 					$stmt = $this->db->prepare($sql);
 					$searchResult = $stmt->execute();
 					$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -620,7 +614,7 @@ print_r($results); die;
 						$error = array('status' => 'Success', 'msg' => 'Data Found', 'data' => json_encode($results[0]));
 						$this->response($this->json($error), 200);
 				} else{
-					$sql = "SELECT `doctor_user`.`du_id`, `doctor_user`.`du_name`,`doctor_user`.`du_email`,`doctor_user`.`du_phone_no`,`doctor_user`.`du_pic`, `doctor_user`.`specializaton`,`doctor_user`.`qualification`, `doctor_user`.`du_address`, `doctor_user`.`du_city`,`doctor_user`.`du_district`,`doctor_user`.`du_state`,`doctor_user`.`du_pincode` FROM doctor_user WHERE `doctor_user`.`du_id` = ".$_GET['doc_id']."  AND `user_type` = 0 LIMIT 1";
+					$sql = "SELECT `table_doctor`.`du_id`, `table_doctor`.`du_name`,`table_doctor`.`du_email`,`table_doctor`.`du_phone_no`,`table_doctor`.`du_pic`, `table_doctor`.`specializaton`,`table_doctor`.`qualification`, `table_doctor`.`du_address`, `table_doctor`.`du_city`,`table_doctor`.`du_district`,`table_doctor`.`du_state`,`table_doctor`.`du_pincode` FROM table_doctor WHERE `table_doctor`.`du_id` = ".$_GET['doc_id']."  AND `user_type` = 0 LIMIT 1";
 					$stmt = $this->db->prepare($sql);
 					$searchResult = $stmt->execute();
 					$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -719,7 +713,9 @@ print_r($results); die;
 				return json_encode($data);
 			}
 		}
-	}
+
+}
+
 	// Initiiate Library
 	$api = new API;
 	$api->processApi();
