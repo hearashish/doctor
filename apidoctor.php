@@ -270,7 +270,6 @@ ini_set('display_errors', '1');
 			}
 			// End Registeration
 
-
 // Login of Doctor and User
 		private function doctor_login() {
 			// Cross validation if the request method is POST else it will return "Not Acceptable" status
@@ -305,7 +304,7 @@ ini_set('display_errors', '1');
               $error = array('status' => "Failed", "msg" => "Invalid Email address or Password");
               $this->response($this->json($error), 200);
             }
-            				if($results[0]['du_pic']==''){
+            				if($results[0]['du_pic']=='') {
 						$error = array('status' => "Success", "msg" => "Sucessfully Login!", "data" => $results );
 					} else{
 						$results[0]['du_pic']='images/'.$results[0]['du_pic'];
@@ -324,8 +323,8 @@ ini_set('display_errors', '1');
 // End Login of Doctor and User
 
 		// Profile Updation
-		private function doctor_reset_password(){
-			if($this->get_request_method() != "POST"){
+		private function doctor_reset_password() {
+			if($this->get_request_method() != "POST") {
 				$this->response('',406);
 			}
 			if(!isset($_POST['password']) ) {
